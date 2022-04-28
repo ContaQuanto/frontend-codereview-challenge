@@ -1,40 +1,70 @@
-import logo from '@assets/logo.svg';
 import React, { useState } from 'react';
+import useSWR from 'swr';
+
 import './App.css';
+import mockData from './mockdata';
+
+import ageCounter from './utils/ageCounter';
+import formatApplicationDate from './utils/formatApplicationDate';
+
+import type { ApiResponse } from './globalTypes';
+
+export async function fetcher(url: string) {
+  const response = await fetch(url);
+  return response.json();
+}
 
 function App() {
-  const [count, setCount] = useState(0);
+  const { data, error } = useSWR<ApiResponse>(`/api/candidates/${process.env.API_SECRET}`, fetcher);
 
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>Hello Vite + React!</p>
-        <p>
-          <button type="button" onClick={() => setCount((count) => count + 1)}>
-            count is: {count}
-          </button>
-        </p>
-        <p>
-          Edit <code>App.tsx</code> and save to test HMR updates.
-        </p>
-        <p>
-          <a className="App-link" href="https://reactjs.org" target="_blank" rel="noopener noreferrer">
-            Learn React
-          </a>
-          {' | '}
-          <a
-            className="App-link"
-            href="https://vitejs.dev/guide/features.html"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Vite Docs
-          </a>
-        </p>
-      </header>
-    </div>
-  );
+  const [applications, setApplications] = useState(mockData);
+
+  if (data?.candidates) {
+    setApplications(data?.candidates);
+  }
+
+  if (!data && !error) {
+    return <div>loading...</div>;
+  } else {
+    return (
+      <div className="App">
+        <header className="App-header">
+          <h1>Quanto FE Challenge</h1>
+        </header>
+        <main>
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Idade</th>
+                <th>Anos de experiência</th>
+                <th>Cargo</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {applications.map(
+                ({ id, name, email, birth_date, year_of_experience, position_applied, application_date, status }) => (
+                  <tr key={id}>
+                    <td aria-label="name">{name}</td>
+                    <td>{email}</td>
+                    <td>{ageCounter(birth_date)}</td>
+                    <td aria-label="year_of_experience">{year_of_experience}</td>
+                    <td>{position_applied}</td>
+                    <td>
+                      <span>{formatApplicationDate(application_date)}</span>
+                    </td>
+                    <td>{status}</td>
+                  </tr>
+                )
+              )}
+            </tbody>
+          </table>
+        </main>
+      </div>
+    );
+  }
 }
 
 export default App;
